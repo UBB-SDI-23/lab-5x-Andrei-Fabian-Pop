@@ -12,6 +12,7 @@ class EmailList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.__offset = 1000
         self.__queryset = Email.objects.all()
         self.__serializer_class = EmailSerializer
 
@@ -23,16 +24,18 @@ class EmailList(APIView):
     def serializer_class(self):
         return self.__serializer_class
 
-    def get(self, request, id=None, more=False):
-        if more:
-            pass
-        if id:
+    def get(self, request, page=None):
+        if page is None:
+            page = 0
+
+        id = request.query_params.get('id', None)
+        if id is not None:
             entity = self.__queryset.get(id=id)
             serializer = self.__serializer_class(entity)
 
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
-        items = self.__queryset.filter(**request.GET.dict())
+        items = self.__queryset.order_by('id')[page * self.__offset:(page + 1) * self.__offset]
         serializer = self.__serializer_class(items, many=True)
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
@@ -62,16 +65,21 @@ class EmailList(APIView):
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def patch(self, request, id=None):
-        item = self.__queryset.get(id=id)
-        serializer = self.__serializer_class(item, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    def patch(self, request):
+        id = request.query_params.get('id', None)
+        if id:
+            item = self.__queryset.get(id=id)
+            serializer = self.__serializer_class(item, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status": "error", "data": "no id specified"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, id=None):
+    def delete(self, request):
+        id = request.query_params.get('id', None)
         if not id:
             return Response({"status": "error", "data": "No id specified, no action was performed"})
         item = self.__queryset.get(id=id)
@@ -83,6 +91,7 @@ class EventList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.__offset = 1000
         self.__queryset = Event.objects.all()
         self.__serializer_class = EventSerializer
 
@@ -94,13 +103,16 @@ class EventList(APIView):
     def serializer_class(self):
         return self.__serializer_class
 
-    def get(self, request, id=None, email=None):
+    def get(self, request, page=None):
+        if page is None:
+            page = 0
+        id = request.query_params.get('id', None)
         if id:
             entity = self.__queryset.get(id=id)
             serializer = self.__serializer_class(entity)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
-        items = self.__queryset.filter(**request.GET.dict())
+        items = self.__queryset.order_by('id')[page * self.__offset:(page + 1) * self.__offset]
         serializer = self.__serializer_class(items, many=True)
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
@@ -112,16 +124,21 @@ class EventList(APIView):
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request, id=None):
-        item = self.__queryset.get(id=id)
-        serializer = self.__serializer_class(item, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    def patch(self, request):
+        id = request.query_params.get('id', None)
+        if id:
+            item = self.__queryset.get(id=id)
+            serializer = self.__serializer_class(item, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
-            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return Response({"status": "error", "data": "no id specified"}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def delete(self, request, id=None):
+    def delete(self, request):
+        id = request.query_params.get('id', None)
         if not id:
             return Response({"status": "error", "data": "No id specified, no action was performed"},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -134,6 +151,7 @@ class SubscriptionList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.__offset = 1000
         self.__model = Subscription
         self.__queryset = self.__model.objects.all()
         self.__serializer_class = SubscriptionSerializer
@@ -154,13 +172,21 @@ class SubscriptionList(APIView):
     def filter_fields(self):
         return self.__filter_fields
 
-    def get(self, request, gtvalue=None):
+    def get(self, request, gtvalue=None, page=None):
+        if page is None:
+            page = 0
+        id = request.query_params.get('id', None)
+        if id:
+            entity = self.__queryset.get(id=id)
+            serializer = self.__serializer_class(entity)
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
         if gtvalue:
             entities = self.__queryset.filter(price__gt=gtvalue)
             serializer = self.__serializer_class(entities, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
-        items = self.__queryset.filter(**request.GET.dict())
+        items = self.__queryset.order_by('id')[page * self.__offset:(page + 1) * self.__offset]
         serializer = self.__serializer_class(items, many=True)
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
@@ -172,16 +198,21 @@ class SubscriptionList(APIView):
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def patch(self, request, id=None):
-        item = self.__queryset.get(id=id)
-        serializer = self.__serializer_class(item, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    def patch(self, request):
+        id = request.query_params.get('id', None)
+        if id is not None:
+            item = self.__queryset.get(id=id)
+            serializer = self.__serializer_class(item, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status": "error", "data": "no id specified"}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def delete(self, request, id=None):
+    def delete(self, request):
+        id = request.query_params.get('id', None)
         if not id:
             return Response({"status": "error", "data": "No id specified, no action was performed"},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -193,6 +224,7 @@ class SubscriptionList(APIView):
 class StatisticsView(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.__offset = 1000
         self.stats = {
             "yearly_pay": self.__yearly_pay,
             "countries": self.__countries,
@@ -202,11 +234,7 @@ class StatisticsView(APIView):
     def __countries(request) -> Response:
         response = {}
         for item in Email.AVAILABLE_COUNTRIES:
-            response[item[0]] = 0
-
-        events = EmailToEvent.objects.all()
-        for event in events:
-            response[Email.objects.get(id=event.email_id).country] += 1
+            response[item[0]] = Email.objects.filter(country=item[0]).count()
 
         return Response(response.items(), status=status.HTTP_200_OK)
 
@@ -214,7 +242,7 @@ class StatisticsView(APIView):
     def __yearly_pay(request) -> Response:
         response = {}
 
-        emails = Email.objects.all()
+        emails = Email.objects.all()[:1000]
         for email in emails:
             subscriptions = Subscription.objects.all().filter(mail=email.id)
             pay = 0
@@ -240,6 +268,7 @@ class EmailToEventList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.__offset = 1000
         self.__model = EmailToEvent
         self.__queryset = self.__model.objects.all()
         self.__serializer_class = EmailToEventSerializer
@@ -252,8 +281,11 @@ class EmailToEventList(APIView):
     def serializer_class(self):
         return self.__serializer_class
 
-    def get(self, request, email_id=None, event_id=None, id=None):
-        items = self.__queryset.filter(**request.GET.dict())
+    def get(self, request, email_id=None, event_id=None, page=None):
+        if page is None:
+            page = 0
+        id = request.query_params.get('id', None)
+        items = self.__queryset.order_by('id')[page * self.__offset:(page + 1) * self.__offset]
 
         if id:
             items = items.filter(id=id)
