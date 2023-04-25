@@ -4,12 +4,13 @@ from .views import *
 
 urlpatterns = [
     path("emails/", EmailList.as_view()),
+    path("emails/<str:email_name>", EmailAddresses.as_view(), name="email_name"),
     path("emails/<int:page>/", EmailList.as_view()),
     path("emails/more/<int:more>", EmailList.as_view()),
 
     path("events/", EventList.as_view()),
     path("events/<int:page>/", EventList.as_view()),
-
+    path("events/<str:event_name>", EventAddresses.as_view(), name="event_name"),
 
     path("emails/<int:email_id>/events/", EmailToEventList.as_view()),
     path("emails/<int:email_id>/events/<int:event_id>/", EmailToEventList.as_view()),

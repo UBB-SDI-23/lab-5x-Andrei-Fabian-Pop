@@ -1,34 +1,35 @@
 import {Button, Card, CardActions, CardContent, IconButton, TextField} from "@mui/material";
 import {Container} from "@mui/system";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {Link, useNavigate, useParams} from "react-router-dom";
 import {BACKEND_API_URL} from "../../constants";
-import {Email} from "../../models/Email";
+import {Event} from "../../models/Event";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import axios from "axios";
 
-export const AddEmail = () => {
+export const UpdateEvent = () => {
+    const {eventid} = useParams();
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState<Email>({
-        address: "",
-        corporate_email: false,
-        user_full_name: "",
-        language: "",
-        country: ""
+    const [event_, setEvent_] = useState<Event>({
+        id: (typeof eventid === "string" ? parseInt(eventid) : -1),
+        name: "",
+        description: "",
+        start_date: "",
+        end_date: "",
+        recurring: false
     });
 
-    const addEmail = async (event: { preventDefault: () => void }) => {
+    const updateEmail = async (event: { preventDefault: () => void }) => {
             event.preventDefault();
             try {
-                await axios.post(`${BACKEND_API_URL}/emails/`, email, {
+                await axios.patch(`${BACKEND_API_URL}/events/?id=${eventid}`, event_, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
-                navigate("/emails");
-            } catch
-                (error) {
+                navigate("/events");
+            } catch (error) {
                 console.log(error);
             }
         }
@@ -38,57 +39,57 @@ export const AddEmail = () => {
         <Container>
             <Card>
                 <CardContent>
-                    <IconButton component={Link} sx={{mr: 3}} to={`/emails`}>
+                    <IconButton component={Link} sx={{mr: 3}} to={`/events`}>
                         <ArrowBackIcon/>
                     </IconButton>{" "}
-                    <form onSubmit={addEmail}>
+                    <form onSubmit={updateEmail}>
 
                         <TextField
-                            id="address"
-                            label="Address"
+                            id="name"
+                            label="Name"
                             variant="outlined"
                             fullWidth
                             sx={{mb: 2}}
-                            onChange={(event) => setEmail({...email, address: event.target.value})}
+                            onChange={(event) => setEvent_({...event_, name: event.target.value})}
                         />
 
                         <TextField
-                            id="corporate_email"
-                            label="Corporate email"
+                            id="description"
+                            label="Description"
                             variant="outlined"
                             fullWidth
                             sx={{mb: 2}}
-                            onChange={(event) => setEmail({...email, corporate_email: event.target.value === ""})}
+                            onChange={(event) => setEvent_({...event_, description: event.target.value})}
                         />
 
                         <TextField
-                            id="user_full_name"
-                            label="Full Name"
+                            id="start_date"
+                            label="start Date"
                             variant="outlined"
                             fullWidth
                             sx={{mb: 2}}
-                            onChange={(event) => setEmail({...email, user_full_name: event.target.value})}
+                            onChange={(event) => setEvent_({...event_, start_date: event.target.value})}
                         />
 
                         <TextField
-                            id="language"
-                            label="Language (RO, EN, PT)"
+                            id="end_date"
+                            label="End Date"
                             variant="outlined"
                             fullWidth
                             sx={{mb: 2}}
-                            onChange={(event) => setEmail({...email, language: event.target.value})}
+                            onChange={(event) => setEvent_({...event_, end_date: event.target.value})}
                         />
 
                         <TextField
-                            id="country"
-                            label="Country (RO, I, PT)"
+                            id="recurring"
+                            label="Recurring"
                             variant="outlined"
                             fullWidth
                             sx={{mb: 2}}
-                            onChange={(event) => setEmail({...email, country: event.target.value})}
+                            onChange={(event) => setEvent_({...event_, recurring: Boolean(event.target.value)})}
                         />
 
-                        <Button type="submit">Add Email</Button>
+                        <Button type="submit">Update Event</Button>
                     </form>
                 </CardContent>
                 <CardActions></CardActions>

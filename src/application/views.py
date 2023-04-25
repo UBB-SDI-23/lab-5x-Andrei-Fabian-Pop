@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from .serializers import *
 from .models import *
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 
 
 # Create your views here.
@@ -12,7 +12,7 @@ class EmailList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.__offset = 1000
+        self.__offset = 100
         self.__queryset = Email.objects.all()
         self.__serializer_class = EmailSerializer
 
@@ -33,11 +33,11 @@ class EmailList(APIView):
             entity = self.__queryset.get(id=id)
             serializer = self.__serializer_class(entity)
 
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
         items = self.__queryset.order_by('id')[page * self.__offset:(page + 1) * self.__offset]
         serializer = self.__serializer_class(items, many=True)
-        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
     def post(self, request, more=False):
         if more:
@@ -87,11 +87,24 @@ class EmailList(APIView):
         return Response({"status": "success", "data": "Item Deleted"})
 
 
+class EmailAddresses(generics.ListCreateAPIView):
+    serializer_class = EmailSerializer
+
+    def get_queryset(self):
+        email_name = self.kwargs.get("email_name")
+        queryset = Email.objects.all()
+        if email_name is not None:
+            queryset = queryset.filter(address__icontains=email_name)
+        # print(queryset.explain())
+        # print(t_name)
+        return queryset[:10]
+
+
 class EventList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.__offset = 1000
+        self.__offset = 100
         self.__queryset = Event.objects.all()
         self.__serializer_class = EventSerializer
 
@@ -110,11 +123,11 @@ class EventList(APIView):
         if id:
             entity = self.__queryset.get(id=id)
             serializer = self.__serializer_class(entity)
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
         items = self.__queryset.order_by('id')[page * self.__offset:(page + 1) * self.__offset]
         serializer = self.__serializer_class(items, many=True)
-        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
     def post(self, request):
         serializer = self.__serializer_class(data=request.data)
@@ -147,11 +160,23 @@ class EventList(APIView):
         return Response({"status": "success", "data": "Item Deleted"}, status=status.HTTP_200_OK)
 
 
+class EventAddresses(generics.ListCreateAPIView):
+    serializer_class = EventSerializer
+
+    def get_queryset(self):
+        event_name = self.kwargs.get("event_name")
+        queryset = Event.objects.all()
+        if event_name is not None:
+            queryset = queryset.filter(name__icontains=event_name)
+
+        return queryset[:10]
+
+
 class SubscriptionList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.__offset = 1000
+        self.__offset = 100
         self.__model = Subscription
         self.__queryset = self.__model.objects.all()
         self.__serializer_class = SubscriptionSerializer
@@ -179,16 +204,16 @@ class SubscriptionList(APIView):
         if id:
             entity = self.__queryset.get(id=id)
             serializer = self.__serializer_class(entity)
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
         if gtvalue:
             entities = self.__queryset.filter(price__gt=gtvalue)
             serializer = self.__serializer_class(entities, many=True)
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
         items = self.__queryset.order_by('id')[page * self.__offset:(page + 1) * self.__offset]
         serializer = self.__serializer_class(items, many=True)
-        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
     def post(self, request):
         serializer = self.__serializer_class(data=request.data)
@@ -198,7 +223,7 @@ class SubscriptionList(APIView):
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def patch(self, request):
+    def patch(self, request, page=None):
         id = request.query_params.get('id', None)
         if id is not None:
             item = self.__queryset.get(id=id)
@@ -224,7 +249,7 @@ class SubscriptionList(APIView):
 class StatisticsView(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.__offset = 1000
+        self.__offset = 100
         self.stats = {
             "yearly_pay": self.__yearly_pay,
             "countries": self.__countries,
@@ -268,7 +293,7 @@ class EmailToEventList(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.__offset = 1000
+        self.__offset = 100
         self.__model = EmailToEvent
         self.__queryset = self.__model.objects.all()
         self.__serializer_class = EmailToEventSerializer
@@ -290,7 +315,7 @@ class EmailToEventList(APIView):
         if id:
             items = items.filter(id=id)
             serializer = EmailToEventSerializer(items, many=True)
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
         if email_id:
             items = items.filter(email=email_id)
@@ -311,7 +336,7 @@ class EmailToEventList(APIView):
         else:
             serializer = self.__serializer_class(items, many=True)
 
-        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"status": "success", "data": serializer.data, "totalRows": self.__queryset.count()}, status=status.HTTP_200_OK)
 
     def post(self, request):
         serializer = self.__serializer_class(data=request.data)
@@ -321,7 +346,9 @@ class EmailToEventList(APIView):
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
-    def patch(self, request, id=None):
+    def patch(self, request):
+        id = request.query_params.get('id', None)
+
         if id:
             data = request.data
 
@@ -335,7 +362,9 @@ class EmailToEventList(APIView):
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, id=None):
+    def delete(self, request):
+        id = request.query_params.get('id', None)
+
         if not id:
             return Response({"status": "error", "data": "No id specified, no action was performed"},
                             status=status.HTTP_400_BAD_REQUEST)
